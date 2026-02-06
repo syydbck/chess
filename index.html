@@ -4,7 +4,6 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Seyyid vs AI Satranç</title>
-    <!-- Stil ve Kütüphaneler -->
     <link rel="stylesheet" href="https://unpkg.com/@chrisoakman/chessboardjs@1.0.0/dist/chessboard-1.0.0.min.css">
     <style>
         body { background: #2c3e50; color: white; font-family: sans-serif; display: flex; flex-direction: column; align-items: center; justify-content: center; min-height: 100vh; margin: 0; }
@@ -39,13 +38,12 @@
 
         function onDragStart (source, piece, position, orientation) {
             if (game.game_over()) return false;
-            if (piece.search(/^b/) !== -1) return false; // Sadece beyazları oynatabilirsin
+            if (piece.search(/^b/) !== -1) return false;
         }
 
         function makeRandomMove () {
             var possibleMoves = game.moves();
             if (game.game_over()) return;
-
             var randomIdx = Math.floor(Math.random() * possibleMoves.length);
             game.move(possibleMoves[randomIdx]);
             board.position(game.fen());
@@ -55,16 +53,13 @@
         function onDrop (source, target) {
             var move = game.move({ from: source, to: target, promotion: 'q' });
             if (move === null) return 'snapback';
-
             updateStatus();
-            // Sen oynadıktan 500ms sonra bilgisayar (rastgele) oynar
             window.setTimeout(makeRandomMove, 500);
         }
 
         function updateStatus () {
             var status = '';
             var moveColor = (game.turn() === 'b') ? 'Siyah' : 'Beyaz';
-
             if (game.in_checkmate()) { status = 'OYUN BİTTİ! ' + moveColor + ' mat oldu.'; }
             else if (game.in_draw()) { status = 'OYUN BİTTİ! Berabere.'; }
             else {
@@ -80,7 +75,14 @@
             updateStatus();
         }
 
-        var config = { draggable: true, position: 'start', onDragStart: onDragStart, onDrop: onDrop };
+        // TAŞLARIN GÖRÜNMESİ İÇİN GEREKLİ AYAR (FIX)
+        var config = {
+            draggable: true,
+            position: 'start',
+            onDragStart: onDragStart,
+            onDrop: onDrop,
+            pieceTheme: 'https://chessboardjs.com/img/chesspieces/wikipedia/{piece}.png'
+        };
         board = Chessboard('board', config);
         updateStatus();
     </script>
