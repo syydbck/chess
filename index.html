@@ -226,3 +226,79 @@
     }
 
     function sync(isLocal = false) {
+        // Eğer hamleyi biz yaptıysak (isLocal), animasyonu tetikleme ki "iki kere gidiyor" gibi görünmesin
+        board.position(game.fen(), !isLocal); 
+        document.getElementById('snd-move').play();
+        updateUI();
+        if(!isLocal) { timers[game.turn() === 'w' ? 'b' : 'w'] += inc; } // Rakip oynadıysa süre ekle
+        else { timers[mySide] += inc; } // Biz oynadıysak süre ekle
+    }
+
+    async function fetchAI() {
+        try {
+            const res = await fetch(`https://stockfish.online/api/s/v2.php?fen=${game.fen()}&depth=${$('#ai-level').val()}`);
+            const d = await res.json();
+            if(d.success && d.bestmove) {
+                const m = d.bestmove.split(' ')[1];
+                game.move({ from: m.slice(0,2), to: m.slice(2,4), promotion: 'q' });
+                sync();
+                if(d.evaluation) updateEval(d.evaluation);
+            }
+        } catch(e) {}
+    }
+
+    function updateUI() {
+        let h = game.history(), out = '';
+        for(let i=0; i<h.length; i+=2) out += `<div>${(i/2)+1}.</div><div>${h[i]}</div><div>${h[i+1]||''}</div>`;
+        $('#move-history').html(out);
+        
+        const pieces = game.board().flat().filter(p => p);
+        const initial = {p:8, n:2, b:2, r:2, q:1};
+        const counts = {w:{p:0,n:0,b:0,r:0,q:0}, b:{p:0,n:0,b:0,r:0,q:0}};
+        pieces.forEach(p => counts[p.color][p.type]++);
+
+        const draw = (c) => {
+            let res = '';
+            for(let t in initial) {
+                let d = initial[t] - counts[c][t];
+                for(let i=0; i<d; i++) res += `<img src="https://chessboardjs.com/img/chesspieces/wikipedia/${c.toUpperCase()}${t.toUpperCase()}.png" class="captured-piece">`;
+            }
+            return res;
+        };
+        $('#cap-opp').html(draw(mySide==='w' ? 'w' : 'b'));
+        $('#cap-me').html(draw(mySide==='w' ? 'b' : 'w'));
+    }
+
+    function updateEval(v) {
+        let s = parseFloat(v), p = 50 - (s * 5);
+        p = Math.max(5, Math.min(95, p));
+        $('#eval-bar').css('height', (100-p)+'%');
+        $('#eval-val').text(s > 0 ? '+'+s : s);
+    }
+
+    function startTimer() {
+        timerInt = setInterval(() => {
+            if(game.game_over()) return;
+            let t = game.turn();
+            timers[t]--;
+            $('#timer-me').text(formatT(timers[mySide])).toggleClass('active', t === mySide);
+            $('#timer-opp').text(formatT(timers[mySide==='w'?'b':'w'])).toggleClass('active', t !== mySide);
+            if(timers[t] <= 0) { alert('Zaman doldu!'); location.reload(); }
+        }, 1000);
+    }
+
+    function formatT(s) { let m = Math.floor(s/60), sec = s%60; return (m<10?'0':'')+m+":"+(sec<10?'0':'')+sec; }
+
+    function sendChat() {
+        const m = $('#chat-input').val(); if(!m) return;
+        addChat('Siz', m);
+        if(conn) conn.send({type:'chat', name:myName, msg:m});
+        $('#chat-input').val('');
+    }
+
+    function addChat(u, m) { $('#chat-msgs').append(`<div><b>${u}:</b> ${m}</div>`).scrollTop(999); }
+    function handleResign() { if(confirm('Terk etmek istediğine emin misin?')) { if(conn) conn.send({type:'resign'}); location.reload(); } }
+    function offerDraw() { if(conn) { conn.send({type:'draw'}); alert('Beraberlik teklifi gönderildi.'); } }
+</script>
+</body>
+</html>
