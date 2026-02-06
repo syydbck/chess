@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Syyd Chess Pro</title>
+    <title>Syyd Chess_v1</title>
     
     <!-- Kütüphaneler -->
     <link rel="stylesheet" href="https://unpkg.com/@chrisoakman/chessboardjs@1.0.0/dist/chessboard-1.0.0.min.css">
@@ -14,195 +14,219 @@
 
     <style>
         :root { --bg: #161512; --panel: #262421; --accent: #45a049; --white: #dee3e6; --black: #8ca2ad; }
-        body { background: var(--bg); color: white; font-family: 'Segoe UI', sans-serif; margin: 0; display: flex; align-items: center; justify-content: center; min-height: 100vh; }
+        body { background: var(--bg); color: white; font-family: 'Segoe UI', sans-serif; margin: 0; display: flex; align-items: center; justify-content: center; min-height: 100vh; overflow-x: hidden; }
         
-        .main-layout { display: flex; gap: 20px; flex-wrap: wrap; justify-content: center; }
-        #board { width: 500px; max-width: 90vw; border-radius: 4px; box-shadow: 0 10px 50px rgba(0,0,0,0.7); }
+        .main-container { display: flex; gap: 10px; padding: 20px; align-items: flex-start; max-width: 100vw; }
 
-        /* Yan Panel */
-        .side-panel { width: 300px; background: var(--panel); padding: 20px; border-radius: 8px; display: flex; flex-direction: column; gap: 15px; }
-        .status-badge { background: #312e2b; padding: 10px; border-radius: 4px; border-left: 4px solid var(--accent); font-size: 0.9rem; }
-        
-        /* Koltuk Seçimi */
-        .seats { display: flex; gap: 10px; }
-        .seat { flex: 1; padding: 15px; border: 2px solid #3d3a37; border-radius: 6px; text-align: center; cursor: pointer; transition: 0.3s; }
-        .seat.active { border-color: var(--accent); background: rgba(69, 160, 73, 0.1); }
-        .seat.occupied { opacity: 0.5; cursor: not-allowed; }
+        /* Eval Bar */
+        .eval-container { width: 30px; height: 500px; background: #403d39; border-radius: 4px; overflow: hidden; position: relative; display: flex; flex-direction: column; }
+        #eval-bar { width: 100%; height: 50%; background: white; transition: height 0.5s ease; position: absolute; bottom: 0; }
+        .eval-text { position: absolute; width: 100%; text-align: center; z-index: 2; font-size: 10px; color: #888; font-weight: bold; top: 50%; transform: translateY(-50%); }
 
-        button { background: #3d3a37; color: white; border: none; padding: 12px; border-radius: 4px; cursor: pointer; font-weight: bold; transition: 0.2s; }
-        button:hover { background: #4d4a46; }
-        button.primary { background: var(--accent); }
+        /* Board Area */
+        #board { width: 500px; border-radius: 4px; box-shadow: 0 5px 25px rgba(0,0,0,0.5); }
+
+        /* Right Panel */
+        .info-panel { width: 320px; height: 500px; display: flex; flex-direction: column; gap: 10px; }
+        .box { background: var(--panel); border-radius: 4px; padding: 10px; display: flex; flex-direction: column; }
         
-        .timer { font-family: monospace; font-size: 2rem; text-align: center; background: #1a1917; padding: 10px; border-radius: 4px; margin: 10px 0; }
+        /* Captured Pieces */
+        .captured-box { height: 40px; flex-direction: row; gap: 2px; flex-wrap: wrap; align-items: center; }
+        .captured-piece { width: 20px; height: 20px; }
+
+        /* History */
+        .history-box { flex: 1; overflow-y: auto; font-size: 13px; max-height: 150px; }
+        .history-grid { display: grid; grid-template-columns: 30px 1fr 1fr; gap: 5px; }
+        .history-grid div { padding: 2px 5px; background: #312e2b; }
+
+        /* Chat */
+        .chat-box { flex: 1; min-height: 150px; }
+        #chat-msgs { flex: 1; overflow-y: auto; font-size: 12px; margin-bottom: 5px; }
+        #chat-input { background: #1a1917; border: 1px solid #3d3a37; color: white; padding: 5px; border-radius: 3px; }
+
+        /* Overlay */
+        #setup-overlay { position: fixed; inset: 0; background: rgba(0,0,0,0.9); z-index: 100; display: flex; align-items: center; justify-content: center; }
+        .setup-card { background: var(--panel); padding: 30px; border-radius: 8px; width: 300px; text-align: center; }
         
-        /* Lichess Kare Renkleri */
+        input, select, button { width: 100%; margin: 8px 0; padding: 10px; border-radius: 4px; border: none; font-family: inherit; }
+        input, select { background: #3d3a37; color: white; }
+        button { background: var(--accent); color: white; cursor: pointer; font-weight: bold; }
+        
+        .timer { font-size: 1.5rem; font-family: monospace; text-align: right; }
+        .player-info { display: flex; justify-content: space-between; align-items: center; font-size: 14px; margin: 5px 0; }
+
         .white-1e1d7 { background-color: var(--white) !important; }
         .black-3b838 { background-color: var(--black) !important; }
-        
-        #room-link { font-size: 0.7rem; color: #888; word-break: break-all; margin-top: 10px; }
     </style>
 </head>
 <body>
 
-<div class="main-layout">
-    <div id="board"></div>
-
-    <div class="side-panel">
-        <div id="game-info">
-            <h2 style="margin:0 0 10px 0;">Syyd Chess Pro</h2>
-            <div class="status-badge" id="game-status">Bağlanıyor...</div>
+<div id="setup-overlay">
+    <div class="setup-card">
+        <h2>Syyd Chess_v1</h2>
+        <input type="text" id="user-name" placeholder="Adınız" value="Seyyid">
+        <select id="mode-select">
+            <option value="ai">Yapay Zekaya Karşı</option>
+            <option value="friend">Arkadaşınla Oyna (Online)</option>
+        </select>
+        <div id="ai-opt">
+            <label style="font-size: 12px;">AI Zorluğu (1-10)</label>
+            <input type="range" id="ai-level" min="1" max="10" value="3">
         </div>
-
-        <div class="timer" id="game-timer">05:00</div>
-
-        <div id="setup-section">
-            <label>Oyun Modu:</label>
-            <select id="mode-select" style="width:100%; padding:8px; background:#3d3a37; color:white; border:none;">
-                <option value="ai">Yapay Zekaya Karşı (Stockfish)</option>
-                <option value="friend">Arkadaşınla Oyna (Online)</option>
-            </select>
-
-            <div id="ai-levels" style="margin-top:10px;">
-                <label>AI Seviyesi (1-10):</label>
-                <input type="range" id="ai-level" min="1" max="10" value="3" style="width:100%;">
-            </div>
-
-            <div id="seat-selection" style="margin-top:15px;">
-                <label>Koltuk Seç:</label>
-                <div class="seats">
-                    <div class="seat" id="seat-white" onclick="selectSeat('w')">⚪ BEYAZ</div>
-                    <div class="seat" id="seat-black" onclick="selectSeat('b')">⚫ SİYAH</div>
-                </div>
-            </div>
-
-            <button class="primary" id="start-btn" onclick="initGame()" style="margin-top:20px; width:100%;">HAZIR & BAŞLAT</button>
-            <div id="room-link"></div>
-        </div>
-        
-        <button onclick="location.reload()" style="font-size: 0.8rem; opacity: 0.6;">Sıfırla</button>
+        <select id="side-select">
+            <option value="w">Beyaz Ol</option>
+            <option value="b">Siyah Ol</option>
+        </select>
+        <button onclick="preStart()">OYUNU KUR</button>
+        <div id="share-link" style="font-size: 10px; color: #888; margin-top: 10px; word-break: break-all;"></div>
     </div>
 </div>
 
-<!-- Ses Efektleri -->
+<div class="main-container">
+    <!-- Eval Bar -->
+    <div class="eval-container">
+        <div class="eval-text" id="eval-val">0.0</div>
+        <div id="eval-bar"></div>
+    </div>
+
+    <!-- Board -->
+    <div class="board-container">
+        <div class="player-info">
+            <span id="opp-name-label">Rakip</span>
+            <span id="opp-timer" class="timer">05:00</span>
+        </div>
+        <div id="captured-top" class="box captured-box"></div>
+        
+        <div id="board"></div>
+        
+        <div id="captured-bottom" class="box captured-box"></div>
+        <div class="player-info">
+            <span id="my-name-label">Siz</span>
+            <span id="my-timer" class="timer">05:00</span>
+        </div>
+    </div>
+
+    <!-- Right Side -->
+    <div class="info-panel">
+        <div class="box history-box">
+            <div style="font-weight: bold; border-bottom: 1px solid #3d3a37; margin-bottom: 5px;">Geçmiş</div>
+            <div id="move-history" class="history-grid"></div>
+        </div>
+        
+        <div class="box chat-box">
+            <div id="chat-msgs"></div>
+            <input type="text" id="chat-input" placeholder="Mesaj yaz..." onkeypress="if(event.key==='Enter') sendChat()">
+        </div>
+        
+        <button style="background: #3d3a37; font-size: 12px;" onclick="location.reload()">Sıfırla & Menü</button>
+    </div>
+</div>
+
 <audio id="move-sound" src="https://images.chesscomfiles.com/chess-themes/sounds/_standard/move-self.mp3"></audio>
 
 <script>
-    var board = null;
-    var game = new Chess();
-    var peer = null;
-    var conn = null;
-    var myRole = null; // 'w' or 'b'
-    var isAIGame = true;
+    var board, game = new Chess(), peer, conn, myName, mySide, isAI = true;
     var moveSound = document.getElementById('move-sound');
 
-    // PeerJS Kurulumu (Online için)
-    const roomId = new URLSearchParams(window.location.search).get('room') || Math.random().toString(36).substring(7);
-    const isGuest = new URLSearchParams(window.location.search).has('room');
+    // Oda ve ID yönetimi
+    const urlParams = new URLSearchParams(window.location.search);
+    const roomId = urlParams.get('room') || Math.random().toString(36).substring(7);
+    if(urlParams.get('room')) $('#mode-select').val('friend');
+
+    function preStart() {
+        myName = $('#user-name').val();
+        mySide = $('#side-select').val();
+        isAI = $('#mode-select').val() === 'ai';
+        
+        if(!isAI) {
+            initPeer();
+        } else {
+            startGame();
+        }
+    }
 
     function initPeer() {
         peer = new Peer('syyd-' + roomId);
-        
         peer.on('open', (id) => {
-            $('#game-status').text(isGuest ? 'Odaya bağlanıldı!' : 'Oda kuruldu. Arkadaşını bekle.');
-            if(!isGuest) {
-                const link = window.location.origin + window.location.pathname + '?room=' + roomId;
-                $('#room-link').text('Paylaşım Linki: ' + link);
-            }
-        });
-
-        peer.on('connection', (c) => {
-            conn = c;
-            setupConn();
-            $('#game-status').text('Arkadaşın bağlandı! Koltuk seçin.');
-        });
-
-        peer.on('error', (err) => {
-            if(isGuest) {
+            const link = window.location.origin + window.location.pathname + '?room=' + roomId;
+            $('#share-link').html("Arkadaşına gönder:<br>" + link);
+            $('#game-status').text('Oda hazır...');
+            if(urlParams.get('room')) {
                 conn = peer.connect('syyd-' + roomId);
                 setupConn();
             }
         });
+        peer.on('connection', (c) => {
+            conn = c;
+            setupConn();
+            startGame(); // Arkadaş gelince başla
+        });
     }
 
     function setupConn() {
+        conn.on('open', () => conn.send({type: 'join', name: myName}));
         conn.on('data', (data) => {
             if(data.type === 'move') {
                 game.move(data.move);
-                board.position(game.fen());
-                moveSound.play();
-            } else if(data.type === 'seat') {
-                updateSeatUI(data.role, true);
+                onAfterMove();
+            } else if(data.type === 'chat') {
+                addChat(data.name, data.msg);
+            } else if(data.type === 'join') {
+                $('#opp-name-label').text(data.name);
+                addChat('Sistem', data.name + ' katıldı.');
+                startGame();
             }
         });
     }
 
-    function selectSeat(role) {
-        myRole = role;
-        $('.seat').removeClass('active');
-        $(`#seat-${role === 'w' ? 'white' : 'black'}`).addClass('active');
-        if(conn) conn.send({type: 'seat', role: role});
+    function startGame() {
+        $('#setup-overlay').hide();
+        $('#my-name-label').text(myName);
+        
+        board = Chessboard('board', {
+            draggable: true,
+            position: 'start',
+            orientation: mySide === 'w' ? 'white' : 'black',
+            onDragStart: (s, p) => {
+                if (game.game_over()) return false;
+                if ((mySide === 'w' && p.search(/^b/) !== -1) || (mySide === 'b' && p.search(/^w/) !== -1)) return false;
+            },
+            onDrop: (source, target) => {
+                let move = game.move({ from: source, to: target, promotion: 'q' });
+                if (!move) return 'snapback';
+                
+                onAfterMove();
+                if(conn) conn.send({type: 'move', move: move});
+                if(isAI) setTimeout(makeAIMove, 500);
+            },
+            pieceTheme: 'https://chessboardjs.com/img/chesspieces/wikipedia/{piece}.png'
+        });
+        if(isAI && mySide === 'b') makeAIMove();
     }
 
-    function updateSeatUI(role, occupied) {
-        const id = role === 'w' ? '#seat-white' : '#seat-black';
-        if(occupied) $(id).addClass('occupied').text('DOLU');
+    function onAfterMove() {
+        board.position(game.fen());
+        moveSound.play();
+        updateUI();
     }
 
     async function makeAIMove() {
-        $('#game-status').text('AI Düşünüyor...');
         const level = $('#ai-level').val();
         try {
             const res = await fetch(`https://stockfish.online/api/s/v2.php?fen=${game.fen()}&depth=${level}`);
             const data = await res.json();
             if(data.success && data.bestmove) {
-                const moveParts = data.bestmove.split(' ');
-                const move = moveParts[1];
-                game.move({ from: move.slice(0,2), to: move.slice(2,4), promotion: 'q' });
-                board.position(game.fen());
-                moveSound.play();
-                $('#game-status').text('Senin Sıran');
+                const best = data.bestmove.split(' ')[1];
+                game.move({ from: best.slice(0,2), to: best.slice(2,4), promotion: 'q' });
+                onAfterMove();
+                updateEval(data.evaluation);
             }
-        } catch(e) { $('#game-status').text('AI Hatası!'); }
+        } catch(e) {}
     }
 
-    function onDrop(source, target) {
-        if((isAIGame || conn) && game.turn() !== myRole) return 'snapback';
-
-        var move = game.move({ from: source, to: target, promotion: 'q' });
-        if (move === null) return 'snapback';
-
-        moveSound.play();
-        
-        if(conn) conn.send({type: 'move', move: move});
-        if(isAIGame) window.setTimeout(makeAIMove, 500);
-    }
-
-    function initGame() {
-        isAIGame = $('#mode-select').val() === 'ai';
-        if(!myRole) { alert('Lütfen bir koltuk seçin!'); return; }
-
-        board = Chessboard('board', {
-            draggable: true,
-            position: 'start',
-            orientation: myRole === 'w' ? 'white' : 'black',
-            onDragStart: (s, p) => {
-                if (game.game_over()) return false;
-                if ((myRole === 'w' && p.search(/^b/) !== -1) || (myRole === 'b' && p.search(/^w/) !== -1)) return false;
-            },
-            onDrop: onDrop,
-            pieceTheme: 'https://chessboardjs.com/img/chesspieces/wikipedia/{piece}.png'
-        });
-
-        $('#setup-section').hide();
-        $('#game-status').text(game.turn() === myRole ? 'Senin Sıran' : 'Rakip Bekleniyor...');
-        
-        if(isAIGame && myRole === 'b') makeAIMove();
-    }
-
-    $('#mode-select').on('change', function() {
-        if(this.value === 'friend') initPeer();
-        $('#ai-levels').toggle(this.value === 'ai');
-    });
-</script>
-</body>
-</html>
+    function updateUI() {
+        // Hamle Geçmişi
+        const history = game.history();
+        let html = '';
+        for(let i=0; i<history.length; i+=2) {
+            html += `<div>${(i/2)+1}.</div><div>${history[i
