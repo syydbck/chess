@@ -3,9 +3,9 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Syyd Chess_v1.2.1</title>
+    <title>Syyd Chess_v1.4</title>
     
-    <!-- Kütüphaneler -->
+    <!-- Kütüphaneler (Top Tier CDN) -->
     <link rel="stylesheet" href="https://unpkg.com/@chrisoakman/chessboardjs@1.0.0/dist/chessboard-1.0.0.min.css">
     <script src="https://code.jquery.com/jquery-3.5.1.min.js"></script>
     <script src="https://unpkg.com/@chrisoakman/chessboardjs@1.0.0/dist/chessboard-1.0.0.min.js"></script>
@@ -16,324 +16,301 @@
         :root { --bg: #161512; --panel: #262421; --accent: #45a049; --danger: #b33939; --white: #dee3e6; --black: #8ca2ad; }
         body { background: var(--bg); color: white; font-family: 'Segoe UI', sans-serif; margin: 0; display: flex; align-items: center; justify-content: center; min-height: 100vh; overflow: hidden; }
         
-        .main-container { display: flex; gap: 15px; padding: 10px; opacity: 0; transition: opacity 0.5s; }
-        .main-container.visible { opacity: 1; }
+        /* Oda Kurma Ekranı */
+        #lobby-overlay { position: fixed; inset: 0; background: var(--bg); z-index: 2000; display: flex; align-items: center; justify-content: center; }
+        .setup-card { background: var(--panel); padding: 40px; border-radius: 12px; width: 380px; box-shadow: 0 20px 60px rgba(0,0,0,0.8); border: 1px solid #333; }
+        
+        /* Oyun Alanı */
+        .main-container { display: flex; gap: 15px; padding: 10px; visibility: hidden; opacity: 0; transition: opacity 0.5s ease; }
+        .main-container.active { visibility: visible; opacity: 1; }
 
         /* Eval Bar */
-        .eval-container { width: 30px; height: 500px; background: #403d39; border-radius: 4px; overflow: hidden; position: relative; }
-        #eval-bar { width: 100%; height: 50%; background: white; transition: height 0.7s ease; position: absolute; bottom: 0; }
-        #eval-val { position: absolute; width: 100%; text-align: center; top: 5px; font-size: 10px; color: #888; z-index: 5; }
+        .eval-panel { width: 30px; height: 500px; background: #403d39; border-radius: 4px; overflow: hidden; position: relative; }
+        #eval-bar { width: 100%; height: 50%; background: white; transition: height 0.8s cubic-bezier(0.4, 0, 0.2, 1); position: absolute; bottom: 0; }
+        #eval-val { position: absolute; width: 100%; text-align: center; top: 10px; font-size: 10px; color: #aaa; z-index: 5; font-weight: bold; }
 
-        /* Board */
-        .board-wrapper { width: 500px; }
+        /* Board Area */
+        .board-wrapper { width: 500px; position: relative; }
         #board { border-radius: 3px; box-shadow: 0 5px 30px rgba(0,0,0,0.6); }
 
-        /* Side Panel */
-        .side-panel { width: 340px; height: 500px; display: flex; flex-direction: column; gap: 8px; }
+        /* Sidebar Panelleri */
+        .side-panel { width: 340px; height: 500px; display: flex; flex-direction: column; gap: 10px; }
         .box { background: var(--panel); border-radius: 4px; padding: 12px; }
         
-        /* Captured Pieces */
-        .captured-area { height: 35px; display: flex; align-items: center; flex-wrap: wrap; background: rgba(0,0,0,0.2); border-radius: 4px; padding: 2px 5px; margin: 2px 0; }
-        .captured-piece { width: 22px; height: 22px; margin-right: -5px; }
+        .captured-row { height: 35px; display: flex; align-items: center; gap: 2px; background: rgba(0,0,0,0.1); border-radius: 3px; padding: 0 5px; }
+        .cap-img { width: 22px; height: 22px; margin-right: -4px; }
 
-        /* History & Chat */
-        .flex-grow { flex: 1; overflow-y: auto; background: #1a1917; font-size: 13px; border-radius: 4px; padding: 8px; }
-        #move-history { display: grid; grid-template-columns: 35px 1fr 1fr; gap: 2px; }
-        #chat-msgs { font-size: 12px; height: 100px; overflow-y: auto; margin-bottom: 8px; border-bottom: 1px solid #333; }
-        
-        .chat-input-group { display: flex; gap: 5px; }
-        #chat-input { flex: 1; background: #3d3a37; border: 1px solid #4d4a46; color: white; padding: 8px; border-radius: 4px; }
-        .btn-chat { width: 70px; background: #4d4a46; font-size: 12px; }
+        .history-box { flex: 1; overflow-y: auto; background: #1a1917; padding: 10px; font-size: 13px; }
+        #move-list { display: grid; grid-template-columns: 35px 1fr 1fr; gap: 5px; }
 
-        /* Overlay */
-        #setup-overlay { position: fixed; inset: 0; background: var(--bg); z-index: 1000; display: flex; align-items: center; justify-content: center; }
-        .menu-card { background: var(--panel); padding: 35px; border-radius: 12px; width: 360px; box-shadow: 0 10px 50px rgba(0,0,0,0.8); }
+        .chat-box { height: 160px; display: flex; flex-direction: column; }
+        #chat-window { flex: 1; overflow-y: auto; font-size: 12px; margin-bottom: 8px; }
+        .chat-ctrl { display: flex; gap: 5px; }
         
-        input, select, button { width: 100%; margin: 8px 0; padding: 12px; border-radius: 6px; border: none; font-family: inherit; box-sizing: border-box; }
-        input, select { background: #3d3a37; color: white; border: 1px solid #4d4a46; }
-        button { background: var(--accent); color: white; cursor: pointer; font-weight: bold; transition: 0.2s; }
-        button:hover { filter: brightness(1.1); }
-        .btn-danger { background: var(--danger); }
-        .btn-secondary { background: #3d3a37; }
-        .btn-half { width: 48%; display: inline-block; margin: 1%; font-size: 13px; }
-        
-        .timer { font-size: 1.8rem; font-family: monospace; background: #1a1917; padding: 2px 10px; border-radius: 4px; border: 1px solid #333; }
-        .timer.active { border-color: var(--accent); color: #fff; box-shadow: 0 0 10px rgba(69,160,73,0.3); }
+        /* UI Elementleri */
+        input, select, button { width: 100%; margin: 8px 0; padding: 12px; border-radius: 6px; border: none; font-family: inherit; font-size: 14px; box-sizing: border-box; }
+        input, select { background: #3d3a37; color: white; border: 1px solid #444; }
+        button { background: var(--accent); color: white; cursor: pointer; font-weight: bold; transition: 0.3s; }
+        button:hover { filter: brightness(1.2); }
+        .timer { font-size: 1.8rem; font-family: monospace; background: #1a1917; padding: 2px 12px; border-radius: 4px; border: 1px solid #333; }
+        .timer.active { border-color: var(--accent); color: white; box-shadow: 0 0 10px rgba(69,160,73,0.3); }
 
-        /* Lichess Kare Renkleri */
+        /* Lichess Renkleri */
         .white-1e1d7 { background-color: var(--white) !important; }
         .black-3b838 { background-color: var(--black) !important; }
     </style>
 </head>
 <body>
 
-<div id="setup-overlay">
-    <div class="menu-card">
-        <h2 style="margin:0 0 20px 0; color:var(--accent); text-align:center;">Syyd Chess_v1.2.1</h2>
-        <input type="text" id="username" placeholder="Adınız" value="Seyyid">
+<!-- ODA KURMA (LOBBY) -->
+<div id="lobby-overlay">
+    <div class="setup-card">
+        <h1 style="margin:0 0 25px 0; text-align:center; color:var(--accent);">Syyd Chess_v1.4</h1>
         
-        <select id="game-mode" onchange="toggleMode()">
-            <option value="ai">Bilgisayara Karşı (AI)</option>
+        <input type="text" id="p-name" placeholder="Adınız" value="Seyyid">
+        
+        <label style="font-size:12px; color:#888;">Oyun Türü</label>
+        <select id="p-mode" onchange="updateLobbyUI()">
+            <option value="ai">Yapay Zekaya Karşı (AI)</option>
             <option value="friend">Arkadaşımla Oyna (Online)</option>
         </select>
 
-        <div id="ai-settings">
-            <label style="font-size:11px; color:#888;">Stockfish Seviyesi (1-10)</label>
-            <input type="range" id="ai-level" min="1" max="10" value="5">
+        <div id="ai-opt">
+            <label style="font-size:11px;">Stockfish Seviyesi (1-10)</label>
+            <input type="range" id="ai-lvl" min="1" max="10" value="5">
         </div>
 
-        <div id="friend-settings" style="display:none;">
+        <div id="friend-opt" style="display:none;">
             <div style="display:flex; gap:10px;">
-                <div><label style="font-size:11px;">Dakika</label><input type="number" id="base-time" value="5"></div>
-                <div><label style="font-size:11px;">Artış (sn)</label><input type="number" id="inc-time" value="0"></div>
+                <div><label style="font-size:11px;">Dakika</label><input type="number" id="t-min" value="5"></div>
+                <div><label style="font-size:11px;">Artış (sn)</label><input type="number" id="t-inc" value="0"></div>
             </div>
         </div>
 
-        <select id="user-side">
+        <select id="p-color">
             <option value="w">Beyaz Olarak Başla</option>
             <option value="b">Siyah Olarak Başla</option>
         </select>
 
-        <button id="btn-start" onclick="handleStart()">OYUNU BAŞLAT</button>
-        <div id="room-link-display" style="font-size: 11px; color: #888; margin-top: 15px; word-break: break-all;"></div>
+        <button id="btn-create" onclick="createRoom()">ODAYI KUR VE BAŞLAT</button>
+        <div id="lobby-status" style="font-size:11px; color:#aaa; margin-top:15px; text-align:center; word-break:break-all;"></div>
     </div>
 </div>
 
-<div class="main-container" id="ui-main">
-    <div class="eval-container">
+<!-- OYUN SAHASI -->
+<div class="main-container" id="game-container">
+    <div class="eval-panel">
         <div id="eval-val">0.0</div>
         <div id="eval-bar"></div>
     </div>
 
     <div class="board-wrapper">
-        <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:5px;">
-            <span id="label-opp" style="font-weight:bold; color:#aaa;">Rakip</span>
-            <span id="timer-opp" class="timer">05:00</span>
+        <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:8px;">
+            <span id="opp-display" style="font-weight:bold; color:#888;">Rakip Bekleniyor...</span>
+            <span id="opp-clock" class="timer">05:00</span>
         </div>
-        <div id="cap-opp" class="captured-area"></div>
+        <div id="cap-top" class="captured-row"></div>
         
         <div id="board"></div>
         
-        <div id="cap-me" class="captured-area"></div>
-        <div style="display:flex; justify-content:space-between; align-items:center; margin-top:5px;">
-            <span id="label-me" style="font-weight:bold; color:var(--accent);">Siz</span>
-            <span id="timer-me" class="timer">05:00</span>
+        <div id="cap-btm" class="captured-row"></div>
+        <div style="display:flex; justify-content:space-between; align-items:center; margin-top:8px;">
+            <span id="me-display" style="font-weight:bold; color:var(--accent);">Siz</span>
+            <span id="me-clock" class="timer">05:00</span>
         </div>
     </div>
 
     <div class="side-panel">
-        <div class="box" style="display:flex; justify-content:space-between; padding:5px;">
-            <button class="btn-danger btn-half" onclick="handleResign()">Terk Et</button>
-            <button class="btn-secondary btn-half" onclick="offerDraw()">Beraberlik</button>
+        <div class="box" style="display:flex; gap:10px;">
+            <button style="background:var(--danger); font-size:12px;" onclick="resign()">Terk Et</button>
+            <button style="background:#444; font-size:12px;" onclick="offerDraw()">Beraberlik</button>
         </div>
-        <div class="box flex-grow">
-            <div style="font-weight:bold; color:var(--accent); font-size:12px; margin-bottom:8px; border-bottom:1px solid #333;">HAMLE GEÇMİŞİ</div>
-            <div id="move-history"></div>
+        <div class="box history-box">
+            <div style="font-weight:bold; color:var(--accent); margin-bottom:8px; border-bottom:1px solid #333;">HAMLE GEÇMİŞİ</div>
+            <div id="move-list"></div>
         </div>
-        <div class="box">
-            <div id="chat-msgs"></div>
-            <div class="chat-input-group">
-                <input type="text" id="chat-input" placeholder="Mesaj yaz..." onkeypress="if(event.key==='Enter') sendChat()">
-                <button class="btn-chat" onclick="sendChat()">Gönder</button>
+        <div class="box chat-box">
+            <div id="chat-window"></div>
+            <div class="chat-ctrl">
+                <input type="text" id="chat-input" placeholder="Mesaj yaz..." onkeypress="if(event.key==='Enter') sendMsg()">
+                <button style="width:70px; font-size:12px;" onclick="sendMsg()">Gönder</button>
             </div>
         </div>
-        <button style="background:#1a1917; font-size:11px; padding:5px;" onclick="location.href=location.pathname">Lobiye Dön</button>
+        <button style="background:#111; font-size:11px;" onclick="location.href=location.pathname">Ana Menü</button>
     </div>
 </div>
 
 <audio id="snd-move" src="https://images.chesscomfiles.com/chess-themes/sounds/_standard/move-self.mp3"></audio>
 
 <script>
-    let board, game = new Chess(), peer, conn, myName, mySide, isAI, timers = {w:300, b:300}, inc=0, timerInt;
+    let board, game = new Chess(), peer, conn, me, side, isAI, clocks = {w:300, b:300}, inc=0, timer;
     const urlParams = new URLSearchParams(window.location.search);
-    const roomFromUrl = urlParams.get('room');
+    const joinRoomId = urlParams.get('room');
 
-    // Başlangıç ayarları
-    if(roomFromUrl) {
-        $('#game-mode').val('friend');
-        $('#btn-start').text('ODAYA KATIL');
-        toggleMode();
+    if(joinRoomId) {
+        $('#p-mode').val('friend');
+        $('#btn-create').text('ODAYA KATIL');
+        updateLobbyUI();
     }
 
-    function toggleMode() {
-        const mode = $('#game-mode').val();
-        $('#ai-settings').toggle(mode === 'ai');
-        $('#friend-settings').toggle(mode === 'friend');
+    function updateLobbyUI() {
+        const mode = $('#p-mode').val();
+        $('#ai-opt').toggle(mode === 'ai');
+        $('#friend-opt').toggle(mode === 'friend');
     }
 
-    function handleStart() {
-        myName = $('#username').val() || "İsimsiz";
-        isAI = $('#game-mode').val() === 'ai';
-        mySide = $('#user-side').val();
+    function createRoom() {
+        me = $('#p-name').val() || "İsimsiz";
+        isAI = $('#p-mode').val() === 'ai';
+        side = $('#p-color').val();
+        clocks.w = clocks.b = ($('#t-min').val() || 5) * 60;
+        inc = parseInt($('#t-inc').val()) || 0;
+
+        if(isAI) startNow(); else startMultiplayer();
+    }
+
+    function startMultiplayer() {
+        const rid = joinRoomId || Math.random().toString(36).substring(7);
+        $('#btn-create').prop('disabled', true).text('Bağlanıyor...');
         
-        // AI modunda NaN hatasını önlemek için varsayılan değerler
-        let baseMin = isAI ? 5 : (parseInt($('#base-time').val()) || 5);
-        inc = isAI ? 0 : (parseInt($('#inc-time').val()) || 0);
-        timers.w = timers.b = baseMin * 60;
-
-        if(isAI) {
-            $('#label-opp').text("Stockfish Seviye " + $('#ai-level').val());
-            startMatch();
-        } else {
-            setupMultiplayer();
-        }
-    }
-
-    function setupMultiplayer() {
-        const rid = roomFromUrl || Math.random().toString(36).substring(7);
         peer = new Peer('syyd-' + rid);
         
         peer.on('open', (id) => {
-            if(!roomFromUrl) {
+            if(!joinRoomId) {
                 const link = window.location.origin + window.location.pathname + '?room=' + rid;
-                $('#room-link-display').html(`Arkadaşına bu linki gönder:<br><b style="color:var(--accent);">${link}</b>`);
+                $('#lobby-status').html(`Arkadaşına Linki At:<br><b style="color:var(--accent);">${link}</b>`);
             } else {
                 conn = peer.connect('syyd-' + rid);
-                setupConn();
+                listenConn();
             }
         });
 
         peer.on('connection', (c) => {
             conn = c;
-            setupConn();
+            listenConn();
             setTimeout(() => {
-                // Karşı tarafa benim ayarlarımı gönder (o siyah olacak)
-                conn.send({type:'init', name:myName, side:mySide==='w'?'b':'w', t:timers.w, inc:inc});
-                startMatch();
+                conn.send({type:'init', name:me, side:side==='w'?'b':'w', t:clocks.w, inc:inc});
+                startNow();
             }, 800);
         });
     }
 
-    function setupConn() {
+    function listenConn() {
         conn.on('data', (d) => {
-            if(d.type === 'init') { 
-                mySide = d.side; timers.w = timers.b = d.t; inc = d.inc; 
-                $('#label-opp').text(d.name); startMatch(); 
-            }
-            else if(d.type === 'move') { game.move(d.move); sync(false); }
-            else if(d.type === 'chat') { addChat(d.name, d.msg); }
+            if(d.type === 'init') { side = d.side; clocks.w = clocks.b = d.t; inc = d.inc; $('#opp-display').text(d.name); startNow(); }
+            else if(d.type === 'move') { game.move(d.move); syncBoard(false); }
+            else if(d.type === 'chat') { addMsg(d.name, d.msg); }
             else if(d.type === 'resign') { alert('Rakip terk etti!'); location.reload(); }
-            else if(d.type === 'draw') { if(confirm('Rakip beraberlik teklif ediyor. Kabul mü?')) { alert('Oyun berabere!'); location.reload(); }}
         });
     }
 
-    function startMatch() {
-        $('#setup-overlay').fadeOut();
-        $('#ui-main').addClass('visible');
-        $('#label-me').text(myName);
-        
+    function startNow() {
+        $('#lobby-overlay').fadeOut();
+        $('#game-container').addClass('active');
+        $('#me-display').text(me);
+        if(isAI) $('#opp-display').text("Stockfish Seviye " + $('#ai-lvl').val());
+
         board = Chessboard('board', {
-            draggable: true,
-            position: 'start',
-            orientation: mySide === 'w' ? 'white' : 'black',
+            draggable: true, position: 'start', orientation: side === 'w' ? 'white' : 'black',
             onDragStart: (s, p) => {
                 if (game.game_over()) return false;
-                if ((mySide === 'w' && p.search(/^b/) !== -1) || (mySide === 'b' && p.search(/^w/) !== -1)) return false;
+                if ((side==='w' && p.search(/^b/)!==-1) || (side==='b' && p.search(/^w/)!==-1)) return false;
             },
             onDrop: (s, t) => {
                 let move = game.move({ from: s, to: t, promotion: 'q' });
                 if (!move) return 'snapback';
                 
-                sync(true); // Biz oynadık
+                syncBoard(true);
                 if(conn) conn.send({type:'move', move:move});
                 if(isAI) setTimeout(fetchAI, 600);
             },
             pieceTheme: 'https://chessboardjs.com/img/chesspieces/wikipedia/{piece}.png'
         });
 
-        startTimerLogic();
-        if(isAI && mySide === 'b') fetchAI();
+        startClock();
+        if(isAI && side === 'b') fetchAI();
     }
 
-    function sync(isLocal) {
-        // Taşın zıplamasını (iki kere gitmesini) önlemek için position update'i kontrollü yapıyoruz
+    function syncBoard(isLocal) {
         board.position(game.fen(), !isLocal);
         document.getElementById('snd-move').play();
         
-        // Süre artışını ekle
-        let turnJustFinished = isLocal ? mySide : (mySide === 'w' ? 'b' : 'w');
-        timers[turnJustFinished] += inc;
-
-        updateUI();
+        let prevTurn = isLocal ? side : (side==='w'?'b':'w');
+        clocks[prevTurn] += inc;
+        updateView();
     }
 
     async function fetchAI() {
         try {
-            const res = await fetch(`https://stockfish.online/api/s/v2.php?fen=${game.fen()}&depth=${$('#ai-level').val()}`);
+            const res = await fetch(`https://stockfish.online/api/s/v2.php?fen=${game.fen()}&depth=${$('#ai-lvl').val()}`);
             const d = await res.json();
             if(d.success && d.bestmove) {
-                const m = d.bestmove.split(' ')[1];
-                game.move({ from: m.slice(0,2), to: m.slice(2,4), promotion: 'q' });
-                sync(false);
+                const move = d.bestmove.split(' ')[1];
+                game.move({ from: move.slice(0,2), to: move.slice(2,4), promotion: 'q' });
+                syncBoard(false);
                 if(d.evaluation) updateEval(d.evaluation);
             }
-        } catch(e) { console.log("AI Error"); }
+        } catch(e) { console.error("AI Error"); }
     }
 
-    function updateUI() {
-        // Geçmiş
-        let h = game.history(), out = '';
-        for(let i=0; i<h.length; i+=2) out += `<div>${(i/2)+1}.</div><div>${h[i]}</div><div>${h[i+1]||''}</div>`;
-        $('#move-history').html(out);
+    function updateView() {
+        let history = game.history(), html = '';
+        for(let i=0; i<history.length; i+=2) html += `<div>${(i/2)+1}.</div><div>${history[i]}</div><div>${history[i+1]||''}</div>`;
+        $('#move-list').html(html);
         
-        // Yenilen Taşlar (Düzeltilmiş Resim Yolları)
-        const pieces = game.board().flat().filter(p => p);
+        // Yenilen Taşlar Mantığı
+        const boardState = game.board().flat().filter(p => p);
         const initial = {p:8, n:2, b:2, r:2, q:1};
-        const counts = {w:{p:0,n:0,b:0,r:0,q:0}, b:{p:0,n:0,b:0,r:0,q:0}};
-        pieces.forEach(p => counts[p.color][p.type]++);
+        const cur = {w:{p:0,n:0,b:0,r:0,q:0}, b:{p:0,n:0,b:0,r:0,q:0}};
+        boardState.forEach(p => cur[p.color][p.type]++);
 
-        const getCaptured = (color) => {
+        const drawCap = (c) => {
             let res = '';
             for(let t in initial) {
-                let diff = initial[t] - counts[color][t];
+                let diff = initial[t] - cur[c][t];
                 for(let i=0; i<diff; i++) {
-                    let img = `https://chessboardjs.com/img/chesspieces/wikipedia/${color.toUpperCase()}${t.toUpperCase()}.png`;
-                    res += `<img src="${img}" class="captured-piece">`;
+                    let img = `https://chessboardjs.com/img/chesspieces/wikipedia/${c.toUpperCase()}${t.toUpperCase()}.png`;
+                    res += `<img src="${img}" class="cap-img">`;
                 }
             }
             return res;
         };
-
-        $('#cap-opp').html(getCaptured(mySide === 'w' ? 'w' : 'b'));
-        $('#cap-me').html(getCaptured(mySide === 'w' ? 'b' : 'w'));
+        $('#cap-top').html(drawCap(side === 'w' ? 'w' : 'b'));
+        $('#cap-btm').html(drawCap(side === 'w' ? 'b' : 'w'));
     }
 
     function updateEval(v) {
-        let s = parseFloat(v), p = 50 - (s * 5);
-        p = Math.max(5, Math.min(95, p));
-        $('#eval-bar').css('height', (100-p)+'%');
-        $('#eval-val').text(s > 0 ? '+'+s : s);
+        let score = parseFloat(v);
+        let h = 50 - (score * 5);
+        h = Math.max(5, Math.min(95, h));
+        $('#eval-bar').css('height', (100-h)+'%');
+        $('#eval-val').text(score > 0 ? '+'+score : score);
     }
 
-    function startTimerLogic() {
-        clearInterval(timerInt);
-        timerInt = setInterval(() => {
+    function startClock() {
+        clearInterval(timer);
+        timer = setInterval(() => {
             if(game.game_over()) return;
             let turn = game.turn();
-            timers[turn]--;
+            clocks[turn]--;
             
-            $('#timer-me').text(formatTime(timers[mySide])).toggleClass('active', turn === mySide);
-            $('#timer-opp').text(formatTime(timers[mySide==='w'?'b':'w'])).toggleClass('active', turn !== mySide);
+            $('#me-clock').text(fmtT(clocks[side])).toggleClass('active', turn === side);
+            $('#opp-clock').text(fmtT(clocks[side==='w'?'b':'w'])).toggleClass('active', turn !== side);
             
-            if(timers[turn] <= 0) { alert('Zaman bitti!'); location.reload(); }
+            if(clocks[turn] <= 0) { alert('Süre doldu!'); location.reload(); }
         }, 1000);
     }
 
-    function formatTime(s) {
-        let m = Math.floor(s/60), sec = s%60;
-        return (m<10?'0':'')+m+":"+(sec<10?'0':'')+sec;
-    }
-
-    function sendChat() {
+    function fmtT(s) { let m = Math.floor(s/60), sec = s%60; return (m<10?'0':'')+m+":"+(sec<10?'0':'')+sec; }
+    function sendMsg() {
         const m = $('#chat-input').val(); if(!m) return;
-        addChat('Siz', m);
-        if(conn) conn.send({type:'chat', name:myName, msg:m});
+        addMsg('Siz', m);
+        if(conn) conn.send({type:'chat', name:me, msg:m});
         $('#chat-input').val('');
     }
-
-    function addChat(u, m) { $('#chat-msgs').append(`<div><b>${u}:</b> ${m}</div>`).scrollTop(999); }
-    function handleResign() { if(confirm('Terk etmek istediğine emin misin?')) { if(conn) conn.send({type:'resign'}); location.reload(); } }
-    function offerDraw() { if(conn) { conn.send({type:'draw'}); alert('Beraberlik teklifi gönderildi.'); } }
+    function addMsg(u, m) { $('#chat-window').append(`<div><b>${u}:</b> ${m}</div>`).scrollTop(999); }
+    function resign() { if(confirm('Terk etmek istediğine emin misin?')) { if(conn) conn.send({type:'resign'}); location.reload(); } }
+    function offerDraw() { if(conn) { conn.send({type:'chat', name:'Sistem', msg:'Beraberlik teklif edildi.'}); } }
 </script>
 </body>
 </html>
