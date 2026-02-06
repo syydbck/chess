@@ -3,27 +3,60 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Seyyid vs AI Satranç</title>
+    <title>Syyd Chess</title>
     <link rel="stylesheet" href="https://unpkg.com/@chrisoakman/chessboardjs@1.0.0/dist/chessboard-1.0.0.min.css">
     <style>
-        body { background: #2c3e50; color: white; font-family: sans-serif; display: flex; flex-direction: column; align-items: center; justify-content: center; min-height: 100vh; margin: 0; }
-        #board { width: 400px; max-width: 90vw; border: 5px solid #34495e; border-radius: 5px; }
-        .info { margin: 20px; text-align: center; }
-        .status { font-size: 1.2rem; margin-bottom: 10px; color: #ecf0f1; }
-        button { padding: 10px 20px; background: #27ae60; color: white; border: none; border-radius: 5px; cursor: pointer; font-size: 1rem; }
-        button:hover { background: #2ecc71; }
+        /* Lichess Arka Plan Rengi */
+        body { 
+            background-color: #161512; 
+            margin: 0; 
+            display: flex; 
+            align-items: center; 
+            justify-content: center; 
+            height: 100vh; 
+            overflow: hidden;
+            font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+        }
+
+        /* Tahta Konteynırı */
+        #board { 
+            width: 550px; 
+            max-width: 95vw;
+            box-shadow: 0 8px 25px rgba(0,0,0,0.5);
+        }
+
+        /* Lichess Mavi Tema Kare Renkleri */
+        .white-1e1d7 { background-color: #dee3e6 !important; }
+        .black-3b838 { background-color: #8ca2ad !important; }
+
+        /* Buton Tasarımı (Gizli ama gerektiğinde görünebilir) */
+        .controls {
+            position: absolute;
+            bottom: 20px;
+        }
+
+        button { 
+            background: #363532; 
+            color: #bababa; 
+            border: none; 
+            padding: 10px 20px; 
+            border-radius: 3px; 
+            cursor: pointer;
+            font-size: 14px;
+            transition: background 0.2s;
+        }
+
+        button:hover { background: #403f3c; color: #fff; }
+
+        /* Gereksiz yazıların tamamen kaldırılması */
+        h1, .status { display: none; }
     </style>
 </head>
 <body>
 
-    <div class="info">
-        <h1>♟️ Satranç Dünyası</h1>
-        <div class="status" id="status">Sıra sende (Beyaz)</div>
-    </div>
-
     <div id="board"></div>
 
-    <div class="info">
+    <div class="controls">
         <button onclick="resetGame()">Yeniden Başlat</button>
     </div>
 
@@ -34,7 +67,6 @@
     <script>
         var board = null;
         var game = new Chess();
-        var $status = $('#status');
 
         function onDragStart (source, piece, position, orientation) {
             if (game.game_over()) return false;
@@ -47,44 +79,28 @@
             var randomIdx = Math.floor(Math.random() * possibleMoves.length);
             game.move(possibleMoves[randomIdx]);
             board.position(game.fen());
-            updateStatus();
         }
 
         function onDrop (source, target) {
             var move = game.move({ from: source, to: target, promotion: 'q' });
             if (move === null) return 'snapback';
-            updateStatus();
             window.setTimeout(makeRandomMove, 500);
-        }
-
-        function updateStatus () {
-            var status = '';
-            var moveColor = (game.turn() === 'b') ? 'Siyah' : 'Beyaz';
-            if (game.in_checkmate()) { status = 'OYUN BİTTİ! ' + moveColor + ' mat oldu.'; }
-            else if (game.in_draw()) { status = 'OYUN BİTTİ! Berabere.'; }
-            else {
-                status = 'Sıra: ' + (game.turn() === 'w' ? 'Sende (Beyaz)' : 'Bilgisayarda (Siyah)');
-                if (game.in_check()) { status += ' - ŞAH!'; }
-            }
-            $status.html(status);
         }
 
         function resetGame() {
             game.reset();
             board.start();
-            updateStatus();
         }
 
-        // TAŞLARIN GÖRÜNMESİ İÇİN GEREKLİ AYAR (FIX)
         var config = {
             draggable: true,
             position: 'start',
             onDragStart: onDragStart,
             onDrop: onDrop,
+            // Lichess tarzı temiz taşlar
             pieceTheme: 'https://chessboardjs.com/img/chesspieces/wikipedia/{piece}.png'
         };
         board = Chessboard('board', config);
-        updateStatus();
     </script>
 </body>
 </html>
