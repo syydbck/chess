@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Syyd Chess_v1.7</title>
+    <title>Syyd Chess_v1.8</title>
     
     <link rel="stylesheet" href="https://unpkg.com/@chrisoakman/chessboardjs@1.0.0/dist/chessboard-1.0.0.min.css">
     <script src="https://code.jquery.com/jquery-3.5.1.min.js"></script>
@@ -51,7 +51,7 @@
 
 <div id="lobby-overlay">
     <div class="setup-card">
-        <h2 style="text-align:center; color:var(--accent); margin-top:0;">Syyd Chess_v1.7</h2>
+        <h2 style="text-align:center; color:var(--accent); margin-top:0;">Syyd Chess_v1.8</h2>
         <input type="text" id="p-name" placeholder="Adınız" value="Seyyid">
         
         <div id="settings-area">
@@ -104,13 +104,13 @@
     <div class="side-panel">
         <div id="game-status">Sistem Hazırlanıyor...</div>
         <div id="invite-box" style="display:none;">
-            <b>Arkadaşını Davet Et:</b>
-            <span id="invite-link" onclick="copyLink()">Linki Kopyalamak İçin Tıkla</span>
+            <b>Davet Linki:</b>
+            <span id="invite-link" onclick="copyLink()">Kopyalamak İçin Tıkla</span>
         </div>
         <div class="box flex-grow"><div id="move-list" style="display:grid; grid-template-columns:35px 1fr 1fr; gap:5px;"></div></div>
         <div class="box">
             <div id="chat-win" style="height:100px; overflow-y:auto; font-size:12px; margin-bottom:5px;"></div>
-            <div style="display:flex; gap:5px;"><input type="text" id="chat-in" placeholder="Mesaj..." onkeypress="if(event.key==='Enter') sendChat()"><button onclick="sendChat()" style="width:60px; font-size:11px;">GÖNDER</button></div>
+            <div style="display:flex; gap:5px;"><input type="text" id="chat-in" placeholder="Mesaj..." onkeypress="if(event.key==='Enter') sendChat()"><button onclick="sendChat()" style="width:60px; font-size:11px;">OK</button></div>
         </div>
         <button class="btn-secondary" onclick="location.href=location.pathname" style="font-size:11px;">ANA MENÜ</button>
     </div>
@@ -124,7 +124,6 @@
     const urlParams = new URLSearchParams(window.location.search);
     const joinId = urlParams.get('room');
 
-    // MİSAFİR AYARI
     if(joinId) {
         $('#settings-area').hide();
         $('#btn-start').text('OYUNA KATIL');
@@ -138,14 +137,7 @@
 
     function processStart() {
         me = $('#p-name').val() || "İsimsiz";
-        
-        // KRİTİK DÜZELTME: Eğer linkle geldiyse AI asla olamaz.
-        if(joinId) {
-            isAI = false;
-        } else {
-            isAI = $('#p-mode').val() === 'ai';
-        }
-
+        isAI = joinId ? false : ($('#p-mode').val() === 'ai');
         side = $('#p-side').val();
         clocks.w = clocks.b = ($('#t-min').val() || 5) * 60;
         inc = parseInt($('#t-inc').val()) || 0;
@@ -154,7 +146,6 @@
             setupBoard();
             gameActive = true;
             $('#opp-tag').text("Stockfish Lv" + $('#ai-lvl').val());
-            $('#game-status').text('Yapay Zekaya Karşı');
             startClock();
         } else {
             setupNetwork();
@@ -162,33 +153,38 @@
     }
 
     function setupNetwork() {
-        const rid = joinId || Math.random().toString(36).substring(7);
-        peer = new Peer('syyd-' + rid);
-        
-        peer.on('open', () => {
-            setupBoard();
-            if(!joinId) {
+        // HOST VE GUEST AYRIMI
+        if (joinId) {
+            // GUEST (Ahmet): Kendine rastgele ID al, HOST'un ID'sine bağlan
+            peer = new Peer(); 
+            peer.on('open', () => {
+                setupBoard();
+                conn = peer.connect('syyd-' + joinId);
+                handleConn();
+            });
+        } else {
+            // HOST (Seyyid): Sabit bir oda ID'si al
+            const rid = Math.random().toString(36).substring(7);
+            peer = new Peer('syyd-' + rid);
+            peer.on('open', () => {
+                setupBoard();
                 const link = window.location.origin + window.location.pathname + '?room=' + rid;
                 $('#invite-link').attr('data-url', link);
                 $('#invite-box').show();
                 $('#game-status').text('Bağlantı Bekleniyor...');
-            } else {
-                conn = peer.connect('syyd-' + rid);
+            });
+            peer.on('connection', (c) => {
+                conn = c;
                 handleConn();
-            }
-        });
-
-        peer.on('connection', (c) => {
-            conn = c;
-            handleConn();
-            setTimeout(() => {
-                conn.send({type:'init', name:me, side:side==='w'?'b':'w', t:clocks.w, inc:inc});
-                gameActive = true;
-                $('#invite-box').hide();
-                $('#game-status').text('Arkadaşın Bağlandı!');
-                startClock();
-            }, 800);
-        });
+                setTimeout(() => {
+                    conn.send({type:'init', name:me, side:side==='w'?'b':'w', t:clocks.w, inc:inc});
+                    gameActive = true;
+                    $('#invite-box').hide();
+                    $('#game-status').text('Arkadaşın Bağlandı!');
+                    startClock();
+                }, 800);
+            });
+        }
     }
 
     function handleConn() {
@@ -235,9 +231,7 @@
     }
 
     async function callAI() {
-        // AI GÜVENLİK KİLİDİ: Eğer oyun AI modu değilse asla çalışma.
         if (!isAI) return;
-
         try {
             const res = await fetch(`https://stockfish.online/api/s/v2.php?fen=${game.fen()}&depth=${$('#ai-lvl').val()}`);
             const d = await res.json();
@@ -288,7 +282,7 @@
     function sendChat() {
         const m = $('#chat-in').val(); if(!m) return;
         addMsg('Siz', m); if(conn) conn.send({type:'chat', name:me, msg:m});
-        $('#chat-in').val('');
+        $('#chat-input').val('');
     }
     function addMsg(u, m) { $('#chat-win').append(`<div><b>${u}:</b> ${m}</div>`).scrollTop(999); }
 </script>
