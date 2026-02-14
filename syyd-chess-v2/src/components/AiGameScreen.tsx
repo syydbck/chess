@@ -151,6 +151,7 @@ export const AiGameScreen = ({ config, onBack, onOpenAnalysis }: AiGameScreenPro
   const [chats, setChats] = useState<ChatMessage[]>([]);
   const [savedGameId, setSavedGameId] = useState<string | null>(null);
   const savedRef = useRef(false);
+  const thinkCycleRef = useRef(0);
 
   useEffect(() => {
     setChats([
@@ -249,7 +250,8 @@ export const AiGameScreen = ({ config, onBack, onOpenAnalysis }: AiGameScreenPro
       return;
     }
 
-    let cancelled = false;
+    const cycleId = thinkCycleRef.current + 1;
+    thinkCycleRef.current = cycleId;
     const depth = aiLevelToDepth(config.aiLevel);
     const wait = aiLevelToThinkDelayMs(config.aiLevel);
     const maxThinkMs = 1200 + config.aiLevel * 350;
@@ -264,7 +266,7 @@ export const AiGameScreen = ({ config, onBack, onOpenAnalysis }: AiGameScreenPro
             window.setTimeout(() => resolve(null), maxThinkMs);
           }),
         ]);
-        if (cancelled) {
+        if (thinkCycleRef.current !== cycleId) {
           return;
         }
 
@@ -279,7 +281,7 @@ export const AiGameScreen = ({ config, onBack, onOpenAnalysis }: AiGameScreenPro
           tryApplyMove(selectedMove, aiSide);
         }
       } catch {
-        if (!cancelled) {
+        if (thinkCycleRef.current === cycleId) {
           appendChat({
             id: createId("system"),
             sender: "System",
@@ -289,7 +291,7 @@ export const AiGameScreen = ({ config, onBack, onOpenAnalysis }: AiGameScreenPro
           });
         }
       } finally {
-        if (!cancelled) {
+        if (thinkCycleRef.current === cycleId) {
           setIsThinking(false);
         }
       }
@@ -300,7 +302,6 @@ export const AiGameScreen = ({ config, onBack, onOpenAnalysis }: AiGameScreenPro
     }, wait);
 
     return () => {
-      cancelled = true;
       window.clearTimeout(timer);
     };
   }, [aiSide, config.aiLevel, isThinking, state.fen, state.status, state.turn]);
