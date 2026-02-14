@@ -1,0 +1,11 @@
+{
+  "name": "chess-root",
+  "private": true,
+  "scripts": {
+    "dev": "npm --prefix syyd-chess-v2 run dev",
+    "build": "npm --prefix syyd-chess-v2 run build",
+    "lint": "npm --prefix syyd-chess-v2 run lint",
+    "preview": "npm --prefix syyd-chess-v2 run preview",
+    "install:app": "npm --prefix syyd-chess-v2 install"
+  }
+}
