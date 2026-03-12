@@ -2,7 +2,8 @@
 import type { EngineTopLine, FactorBreakdownItem, MoveInsight, SavedGame } from "../types";
 import { AnalysisOverlayBoard } from "./AnalysisOverlayBoard";
 import { evaluatePosition, formatScore } from "../utils/engine";
-import { analyzeMoveInsights, calculateFactorBreakdown, calculateTopEngineLines, qualityLabel } from "../utils/chessInsight";
+import { analyzeMoveInsights, calculateFactorBreakdown, calculatePositionBreakdown, calculateTopEngineLines, qualityLabel } from "../utils/chessInsight";
+import { loadPlayerName } from "../utils/storage";
 
 interface AnalysisPageProps {
   game: SavedGame;
@@ -31,6 +32,24 @@ export const AnalysisPage = ({ game, onBack }: AnalysisPageProps) => {
   const [factors, setFactors] = useState<FactorBreakdownItem[]>([]);
   const [topLines, setTopLines] = useState<EngineTopLine[]>([]);
   const [topLineLoading, setTopLineLoading] = useState(false);
+  const [pieceDetailOpen, setPieceDetailOpen] = useState(false);
+
+  const defaultOrientation = useMemo((): "white" | "black" => {
+    const player = loadPlayerName();
+    if (player && player === game.whiteName) {
+      return "white";
+    }
+    if (player && player === game.blackName) {
+      return "black";
+    }
+    return "white";
+  }, [game.blackName, game.whiteName]);
+
+  const [boardOrientation, setBoardOrientation] = useState<"white" | "black">(defaultOrientation);
+
+  useEffect(() => {
+    setBoardOrientation(defaultOrientation);
+  }, [defaultOrientation]);
 
   const positions = useMemo(() => {
     return [game.startFen, ...game.moves.map((move) => move.fenAfter)];
@@ -150,6 +169,8 @@ export const AnalysisPage = ({ game, onBack }: AnalysisPageProps) => {
     };
   }, [currentFen, depth]);
 
+  const breakdown = useMemo(() => calculatePositionBreakdown(currentFen), [currentFen]);
+
   const evalScore = currentEval?.centipawns ?? 0;
   const bounded = Math.max(-900, Math.min(900, evalScore));
   const whiteRatio = Math.max(0, Math.min(100, 50 + bounded / 18));
@@ -184,7 +205,7 @@ export const AnalysisPage = ({ game, onBack }: AnalysisPageProps) => {
             <div className="analysis-board-surface">
               <AnalysisOverlayBoard
                 fen={currentFen}
-                orientation="white"
+                orientation={boardOrientation}
                 lastMoveUci={currentMove?.uci}
                 targetDiffPawns={currentEval?.mate === null ? (currentEval?.centipawns ?? 0) / 100 : null}
               />
@@ -209,6 +230,15 @@ export const AnalysisPage = ({ game, onBack }: AnalysisPageProps) => {
               onClick={() => setMoveIndex((previous) => Math.min(positions.length - 1, previous + 1))}
             >
               Next
+            </button>
+            <button
+              type="button"
+              className="btn subtle flip-button"
+              onClick={() =>
+                setBoardOrientation((current) => (current === "white" ? "black" : "white"))
+              }
+            >
+              ↕
             </button>
             <label className="depth-control">
               Depth
@@ -279,6 +309,69 @@ export const AnalysisPage = ({ game, onBack }: AnalysisPageProps) => {
                   <p>{factor.description}</p>
                 </div>
               ))}
+            </div>
+            <div className="piece-detail">
+              <button
+                type="button"
+                className="piece-detail-toggle"
+                onClick={() => setPieceDetailOpen((open) => !open)}
+              >
+                {pieceDetailOpen ? "▾ Piece Detail" : "▸ Piece Detail"}
+              </button>
+              {pieceDetailOpen ? (
+                <div className="piece-detail-table">
+                  <div className="piece-detail-column">
+                    <div className="piece-detail-head">
+                      <strong>White</strong>
+                      <span>Total</span>
+                    </div>
+                    {breakdown.whitePieces.map((piece, index) => {
+                      const showPositional = Math.abs(piece.positional) > 0.3;
+                      return (
+                        <div key={`${piece.square}-${index}`} className="piece-detail-row">
+                          <div className="piece-detail-piece">
+                            <strong>{piece.piece}</strong>
+                            <span>{piece.square}</span>
+                          </div>
+                          <div className="piece-detail-score">
+                            <span>{piece.total.toFixed(2)}</span>
+                            {showPositional ? (
+                              <span className="piece-positional">
+                                pos {piece.positional > 0 ? "+" : ""}{piece.positional.toFixed(2)}
+                              </span>
+                            ) : null}
+                          </div>
+                        </div>
+                      );
+                    })}
+                  </div>
+                  <div className="piece-detail-column">
+                    <div className="piece-detail-head">
+                      <strong>Black</strong>
+                      <span>Total</span>
+                    </div>
+                    {breakdown.blackPieces.map((piece, index) => {
+                      const showPositional = Math.abs(piece.positional) > 0.3;
+                      return (
+                        <div key={`${piece.square}-${index}`} className="piece-detail-row">
+                          <div className="piece-detail-piece">
+                            <strong>{piece.piece}</strong>
+                            <span>{piece.square}</span>
+                          </div>
+                          <div className="piece-detail-score">
+                            <span>{piece.total.toFixed(2)}</span>
+                            {showPositional ? (
+                              <span className="piece-positional">
+                                pos {piece.positional > 0 ? "+" : ""}{piece.positional.toFixed(2)}
+                              </span>
+                            ) : null}
+                          </div>
+                        </div>
+                      );
+                    })}
+                  </div>
+                </div>
+              ) : null}
             </div>
           </article>
 

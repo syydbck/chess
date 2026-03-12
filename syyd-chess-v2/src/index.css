@@ -614,6 +614,12 @@ label {
   gap: 0.5rem;
 }
 
+.flip-button {
+  padding: 0.55rem 0.7rem;
+  font-size: 1rem;
+  line-height: 1;
+}
+
 .depth-control {
   display: inline-flex;
   align-items: center;
@@ -712,6 +718,122 @@ label {
 
 .factor-note {
   margin-bottom: 0.55rem;
+}
+
+.piece-detail {
+  margin-top: 0.7rem;
+  display: grid;
+  gap: 0.5rem;
+}
+
+.piece-detail-toggle {
+  border: 1px solid rgba(112, 131, 152, 0.35);
+  background: rgba(22, 30, 38, 0.8);
+  color: var(--text);
+  border-radius: 10px;
+  padding: 0.45rem 0.7rem;
+  font-weight: 600;
+  cursor: pointer;
+  text-align: left;
+}
+
+.piece-detail-table {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 0.6rem;
+}
+
+.piece-detail-column {
+  border-radius: 10px;
+  border: 1px solid rgba(112, 131, 152, 0.35);
+  background: rgba(17, 24, 30, 0.7);
+  padding: 0.55rem 0.65rem;
+  display: grid;
+  gap: 0.45rem;
+}
+
+.piece-detail-head {
+  display: flex;
+  justify-content: space-between;
+  color: var(--muted);
+  font-size: 0.78rem;
+  text-transform: uppercase;
+  letter-spacing: 0.06em;
+}
+
+.piece-detail-row {
+  display: flex;
+  justify-content: space-between;
+  gap: 0.5rem;
+  font-size: 0.88rem;
+}
+
+.piece-detail-piece {
+  display: grid;
+  gap: 0.15rem;
+}
+
+.piece-detail-piece span {
+  color: var(--muted);
+  font-size: 0.78rem;
+}
+
+.piece-detail-score {
+  display: grid;
+  justify-items: end;
+  gap: 0.2rem;
+  text-align: right;
+}
+
+.piece-positional {
+  color: var(--muted);
+  font-size: 0.74rem;
+}
+
+.board-square-overlay {
+  position: relative;
+  width: 100%;
+  height: 100%;
+}
+
+.promotion-picker {
+  position: absolute;
+  left: 50%;
+  transform: translateX(-50%);
+  display: grid;
+  grid-template-columns: repeat(4, minmax(0, 1fr));
+  gap: 0.25rem;
+  padding: 0.4rem;
+  background: var(--panel);
+  border: 1px solid rgba(112, 131, 152, 0.45);
+  border-radius: 10px;
+  box-shadow: 0 12px 28px rgba(0, 0, 0, 0.35);
+  z-index: 5;
+}
+
+.promotion-picker--white {
+  bottom: calc(100% + 6px);
+}
+
+.promotion-picker--black {
+  top: calc(100% + 6px);
+}
+
+.promotion-choice {
+  border: 1px solid rgba(124, 146, 171, 0.45);
+  background: rgba(26, 34, 42, 0.9);
+  color: var(--text);
+  border-radius: 8px;
+  width: 2.1rem;
+  height: 2.1rem;
+  display: grid;
+  place-items: center;
+  cursor: pointer;
+  font-size: 1.1rem;
+}
+
+.promotion-choice:hover {
+  background: rgba(48, 60, 73, 0.95);
 }
 
 @media (max-width: 1080px) {
